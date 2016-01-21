@@ -162,21 +162,67 @@ End Function
 '@description Data type for Pattern like RegEx's
 '@TODO
 Type S_Pattern
-	'@description Defines how often the pattern occurs
+	'@description An arbitrary subset of @set occurs certain times
+	'@set An S_StringSet object
+	'@howOftenMin how often the subset occurs at least
+	'@howOftenMax how often the subset occurs at most
 	'@TODO
-	Method Occurs:Int(s:String, howOftenMin:Int, howOftenMax:Int)
+	Method OccursAny:Int(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
+		
+	End Method
+	
+	'@description A subset of @set with at least @howMany strings occurs certain times
+	'@set An S_StringSet object
+	'@howMany how many strings the subset of @set must have at least
+	'@howOftenMin how often the subset occurs at least
+	'@howOftenMax how often the subset occurs at most
+	'@TODO
+	Method OccursAtLeast(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
+	
+	End Method
+	
+	'@description A subset of @set with at most @howMany strings occurs certain times
+	'@set An S_StringSet object
+	'@howMany how many strings the subset of @set can have at most
+	'@howOftenMin how often the subset occurs at least
+	'@howOftenMax how often the subset occurs at most
+	'@TODO
+	Method OccursAtMost(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
+	
+	End Method
+	
+	'@description All strings of @set occur certain times
+	'@set An S_StringSet object
+	'@howOftenMin how often the set occurs at least
+	'@howOftenMax how often the set occurs at most
+	'@TODO
+	Method OccursEvery(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
 		
 	End Method
 End Type
 
 '@description Data type for String collections that can be used for S_Pattern objects.
 '@TODO
-Type S_CharSet
+Type S_StringSet
+	Field values:String[]
+
+	'@description Adds a new String to Self
+	'@newString a new String for this set
+	Method Add(newString:String)
+		
+	End Method
 	
+	'@description Adds some new Strings to Self
+	'@newString some new Strings for this set
+	Method AddMany(newStrings:String[])
+		
+	End Method
 End Type
 
 '@description Data type for results after @Search-Method was executed on an S_String object
 '@TODO
 Type S_Trove
-	Field 
+	Field howOften:Int				'how often the pattern was found
+	Field atWhichPosition:Int[]		'at which position(s) in the string
+	Field result:String[]				'what is (are) the result string(s)
 End Type
