@@ -72,7 +72,7 @@ Type S_String
 	
 	'@description Searches for a Pattern in self
 	'@TODO
-	Method Search:Int(s:String, isRegex:Int=0)
+	Method Search:Int(pattern:S_Pattern, flags:String="")
 		Return -1
 	End Method
 
@@ -169,8 +169,14 @@ Type S_Pattern
 	End Method
 End Type
 
-'@description Data type for character collections that can be used for S_Pattern objects.
+'@description Data type for String collections that can be used for S_Pattern objects.
 '@TODO
 Type S_CharSet
 	
+End Type
+
+'@description Data type for results after @Search-Method was executed on an S_String object
+'@TODO
+Type S_Trove
+	Field 
 End Type
