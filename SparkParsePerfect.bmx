@@ -51,26 +51,53 @@ Type S_String
 	End Method
 	
 	'@description Returns all indexes of a given search string
-	'@TODO
+	'@search The string whose index is needed
+	'@flags [occursMin=%; occursMax=%, occursExactly=%]
+	'@return all indexes of @search
 	Method AllIndexesOf:Int[](search:String, flags:String="")
-		Return Null
+		Local result:Int[]
+		Local lookfromPos:Int = 0
+		Repeat
+			'TODO: pass the remaining flags too
+			Local currentResult:Int = Self.indexOf(search, "inner="+lookFromPos)
+			If(currentResult > -1) Then
+				result = result[..(Len(result)+1)]
+				result[Len(result)-1] = currentResult
+				lookFromPos = currentResult
+			Else
+				Exit
+			EndIf
+		Forever
+		
+		Return result
 	End Method
 	
 	'@description Returns the index range (first and last position) of a search string
-	'@TODO
+	'@search The string whose index is needed
+	'@flags [first; last; inner=%; occursMin=%; occursMax=%, occursExactly=%]
+	'return the specified index range of @search
 	Method IndexRangeOf:Int[](search:String, flags:Int=0)
 		Local found:Int = Self.IndexOf(search)
-		If(found = -1) Then Return [-1,-1]
-		Return Null			
+		If(found = -1) Then Return [-1,-1]		
+		Local result:Int[] = New Int[2]
+		result[0] = found
+		result[1] = found + Len(search)-1
+		
+		Return result
 	End Method
 	
 	'@description Returns all index ranges of a given search string
+	'@search The string whose index is needed
+	'@flags [occursMin=%; occursMax=%, occursExactly=%]
+	'return all index ranges of @search
 	'@TODO
 	Method AllIndexRangesOf()
 		
 	End Method
 	
 	'@description Searches for a Pattern in self
+	'@pattern 
+	'@flags 
 	'@TODO
 	Method Search:Int(pattern:S_Pattern, flags:String="")
 		Return -1
@@ -80,9 +107,11 @@ Type S_String
 	'@startPos The left border (where the result starts)
 	'@endPos The right border (where the result ends) 
 	'@flags: [endAsLength] -> return substring from startPos to (startPos+end)
-	Method SubString:String(startPos:Int, endPos:Int, flags:String="")
+	Method SubString:String(startPos:Int, endPos:Int, flags:String="endAsPos")
 		Local result:String = ""
-		For Local i:Int = startPos To endPos
+		Local endPosReal:Int = endPos
+		If(flags = "endAsLength") Then endPosReal = endPosReal + startPos
+		For Local i:Int = startPos To endPosReal
 			result = result + Chr(Self.value[i])
 		Next
 		Return result
@@ -91,7 +120,7 @@ Type S_String
 	'@description Exchanges the occurrence(s) of a search string by a replacement string
 	'@search The string that should be replaced
 	'@replacement the string that will replace @search
-	'@flags [self] -> apply to this object; [new] -> return reverse string to new String object
+	'@flags [self] -> apply to this object; [new] -> return exchanged string to new String object
 	'@return null if applied to self; otherwise the exchanged string
 	Method Exchange:String(search:String, replacement:String, flags:String)
 		Return ""
@@ -116,7 +145,7 @@ Type S_String
 	'@returns Null if delimiter not found, otherwise an array with separated strings
 	'@TODO
 	Method Split:String[](delimiter:String)
-		Local delimiterOccurences = Self.CountOccurrences(delimiter)
+		Local delimiterOccurences:Int = Self.CountOccurrences(delimiter)
 		If(delimiterOccurences = 0) Then Return Null
 		
 		Local result:String[] = New String[delimiterOccurences-1]
@@ -129,8 +158,8 @@ Type S_String
 	'@search The search string
 	'@flags TODO
 	'@return 0 if not found, otherwise the number of occurrences
-	Method CountOccurrences(search:String, flags:String="")
-		Local result = 0
+	Method CountOccurrences:Int(search:String, flags:String="")
+		Local result:Int = 0
 		Local pos:Int = 0
 		Local i:Int = -1
 		Repeat
@@ -145,7 +174,16 @@ Type S_String
 	'@flags [self] -> apply to this object; [new] -> return reverse string to new String object
 	'@return null if applied to self; otherwise the reverse string
 	Method Reverse:String(flags:String="self")
-		
+		Local result:String = ""
+		For Local i:Int = Len(Self.value)-1 To 0 Step -1
+			result = result + Self.CharAt(i)
+		Next
+	
+		If(flags = "self") Then
+			Return Null
+		Else
+			Return result
+		EndIf
 	End Method
 	
 End Type
