@@ -26,23 +26,63 @@ Type S_String
 	
 	'@description Returns an index of a given search string.
 	'@search The string whose index is needed
-	'@flags [first; last; inner=%; occursMin=%; occursMax=%, occursExactly=%]
+	'@flags [first; last; inner=%; innerLast=%; occursMin=%; occursMax=%; occursExactly=%; ignoreCase]
 	'return the specified index of @search
-	Method IndexOf:Int(search:String, flags:String="")
-		Local selfCharPos:Int = 0
-		Local searchCharPos:Int = 0
-		Local indexFound:Int = -1
+	Method IndexOf:Int(search:String, flags:String="first;")
+		Local selfCharPos:Int = 0		'current position inside self
+		Local searchCharPos:Int = 0		'current position inside the search string
+		Local indexFound:Int = -1		'the position where the wanted index was found, or -1
+		Local minIndexes:Int = -1		'how many indexes need to occur at least
+		Local maxIndexes:Int = 10000	'how many indexes need to occur at most
+		Local totalIndexes:Int = 0		'how many indexes have been found
+		Local targetIndex:Int			'the how maniest index should be returned
+		Local selfFormatted:String = Self.value
+		Local searchFormatted:String = search
 		
-		While(selfCharPos < Len(Self.value))
-			If(searchCharPos = Len(search)) Then Exit
+		'parse flags
+		Local flagParser:S_FlagParser = New S_FlagParser
+		flagParser.GetFlags(flags)
+		For Local i:Int = 0 To Len(flagParser.key)-1
+			Select flagParser.key[i]
+				Case "first"
+					targetIndex = 1
+				Case "last"
+					targetIndex = -1
+				Case "inner"
+					'Print "inner flag matched with value "+flagParser.value[i]
+					targetIndex = Int(flagParser.value[i])
+				Case "innerLast"
+					targetIndex = 0 - Int(flagParser.value[i])
+				Case "occursMin"
+					minIndexes = Int(flagParser.value[i])
+				Case "occursMax"
+					maxIndexes = Int(flagParser.value[i])
+				Case "occursExactly"
+					minIndexes = Int(flagParser.value[i])
+					maxIndexes = Int(flagParser.value[i])
+				Case "ignoreCase"
+					selfFormatted = Lower(selfFormatted)
+					searchFormatted = Lower(searchFormatted)
+			End Select
+		Next
+		
+		While(selfCharPos < Len(selfFormatted))
+			If(searchCharPos = Len(search)) Then 
+				totalIndexes = totalIndexes + 1
+				If(((targetIndex = totalIndexes) Or targetIndex < 0) And (totalIndexes >= minIndexes) And (totalIndexes <= maxIndexes)) Then Exit
+				searchCharPos = 0
+			EndIf
+			
+			'Print "selfCharPos: "+selfCharPos
+			'Print "searchCharPos: "+searchCharPos
 				
-			If(Self.value[selfCharPos] = search[searchCharPos]) Then
+			If(selfFormatted[selfCharPos] = searchFormatted[searchCharPos]) Then
 				If(indexFound = -1) Then indexFound = selfCharPos
 				selfCharPos = selfCharPos + 1
 				searchCharPos = searchCharPos + 1
 			Else
 				selfCharPos = selfCharPos + 1
-				searchCharPos = 1
+				searchCharPos = 0
 				indexFound = -1
 			EndIf
 		Wend
@@ -52,18 +92,19 @@ Type S_String
 	
 	'@description Returns all indexes of a given search string
 	'@search The string whose index is needed
-	'@flags [occursMin=%; occursMax=%, occursExactly=%]
+	'@flags [occursMin=%; occursMax=%, occursExactly=%, ignoreCase]
 	'@return all indexes of @search
 	Method AllIndexesOf:Int[](search:String, flags:String="")
 		Local result:Int[]
-		Local lookfromPos:Int = 0
+		Local lookIndex:Int = 1
 		Repeat
+			Print "hanging in AllIndexesOf with inner="+lookIndex
 			'TODO: pass the remaining flags too
-			Local currentResult:Int = Self.indexOf(search, "inner="+lookFromPos)
+			Local currentResult:Int = Self.IndexOf(search, "inner="+lookIndex+";")
 			If(currentResult > -1) Then
 				result = result[..(Len(result)+1)]
 				result[Len(result)-1] = currentResult
-				lookFromPos = currentResult
+				lookIndex = lookIndex + 1
 			Else
 				Exit
 			EndIf
@@ -74,15 +115,14 @@ Type S_String
 	
 	'@description Returns the index range (first and last position) of a search string
 	'@search The string whose index is needed
-	'@flags [first; last; inner=%; occursMin=%; occursMax=%, occursExactly=%]
+	'@flags [first; last; inner=%; occursMin=%; occursMax=%; occursExactly=%; ignoreCase]
 	'return the specified index range of @search
-	Method IndexRangeOf:Int[](search:String, flags:Int=0)
-		Local found:Int = Self.IndexOf(search)
-		If(found = -1) Then Return [-1,-1]		
+	Method IndexRangeOf:Int[](search:String, flags:String="first;")
+		Local found:Int = Self.IndexOf(search, flags)
+		If(found = -1) Then Return [-1,-1]
 		Local result:Int[] = New Int[2]
 		result[0] = found
-		result[1] = found + Len(search)-1
-		
+		result[1] = found + Len(search)-1		
 		Return result
 	End Method
 	
@@ -145,13 +185,24 @@ Type S_String
 	'@returns Null if delimiter not found, otherwise an array with separated strings
 	'@TODO
 	Method Split:String[](delimiter:String)
-		Local delimiterOccurences:Int = Self.CountOccurrences(delimiter)
-		If(delimiterOccurences = 0) Then Return Null
+		Local delimiterIndexes:Int[] = Self.AllIndexesOf(delimiter)
+		If(Len(delimiterIndexes) = 0) Then Return Null
 		
-		Local result:String[] = New String[delimiterOccurences-1]
-		For Local i:Int = 0 To delimiterOccurences-1
-			'result[i] = SubString()
+		Local result:String[] 
+		If(delimiterIndexes[Len(delimiterIndexes)-1] = Len(Self.value)-1) Then
+			result = New String[Len(delimiterIndexes)]
+		Else
+			result = New String[Len(delimiterIndexes)+1]
+		EndIf
+		
+		Local startPos:Int = 0
+		For Local i:Int = 0 To Len(delimiterIndexes)-1
+			result[i] = Self.SubString(startPos, delimiterIndexes[i]-1)
+			startPos = delimiterIndexes[i] + 1
 		Next
+		If(startPos < Len(Self.value)-1) Then result[Len(delimiterIndexes)] = Self.SubString(startPos, Len(Self.value)-1)
+		
+		Return result
 	End Method
 	
 	'@description Counts how often a search string occurs
@@ -160,11 +211,12 @@ Type S_String
 	'@return 0 if not found, otherwise the number of occurrences
 	Method CountOccurrences:Int(search:String, flags:String="")
 		Local result:Int = 0
-		Local pos:Int = 0
+		Local pos:Int = 1
 		Local i:Int = -1
 		Repeat
-			i = Self.IndexOf(search, "inner="+pos)
+			i = Self.IndexOf(search, "inner="+pos+";")
 			If(i = -1) Then Exit
+			pos = pos + 1
 			result = result + 1
 		Forever
 		Return result
@@ -197,9 +249,56 @@ Function CreateSparkString:S_String(value:String)
 	Return s
 End Function
 
-'@description Data type for Pattern like RegEx's
+'@description Data type for Flag Parsing (used mainly in S_String object methods)
+'@key A string array which saves all keys (=flag names)
+'@value A string array which saves all flag values (if they exist)
+Type S_FlagParser
+	Field key:String[] = New String[0]
+	Field value:String[] = New String[0]
+	
+	'@description Parses all flags from a given string and stores them in the object's @key / @value field
+	'@flags An string that contains flags
+	'@annotation This method uses "classical" string functions instead of S_String methods to avoid infinite loops
+	Method GetFlags(flags:String)
+		'get all delimiter positions
+		Local delimiterPos:Int[] = New Int[0]
+		Local currentDelimiterPos:Int = 0
+		Repeat
+			currentDelimiterPos = Instr(flags,";", currentDelimiterPos+1)
+			If(currentDelimiterPos = 0) Then Exit
+			delimiterPos = delimiterPos[..Len(delimiterPos)+1]
+			delimiterPos[Len(delimiterPos)-1] = currentDelimiterPos
+		Forever
+		
+		For Local i:Int=0 To Len(delimiterPos)-1
+			Local startPos:Int
+			If(i = 0) Then
+				startPos = 1
+			Else
+				startPos = delimiterPos[i-1]+1
+			EndIf
+			Local flag:String = Trim(Mid(flags, startPos, delimiterPos[i]-startPos))
+			
+			Self.key = Self.key[..Len(Self.key)+1]
+			Self.value = Self.value[..Len(Self.value)+1]
+			Local equalsPos:Int = Instr(flag, "=")
+			If(equalsPos > 0) Then
+				Self.key[Len(Self.key)-1] = Mid(flag, 1, equalsPos-1)
+				Self.value[Len(Self.value)-1] = Mid(flag, equalsPos+1)
+			Else
+				Self.key[Len(Self.key)-1] = flag
+				Self.value[Len(Self.value)-1] = ""
+			EndIf
+		Next
+	End Method
+End Type
+
+'@description Data type for Patterns like RegEx's
+'@chain A TList object which saves the elements of which the Pattern consists
 '@TODO
 Type S_Pattern
+	Field chain:TList
+
 	'@description An arbitrary subset of @set occurs certain times
 	'@set An S_StringSet object
 	'@howOftenMin how often the subset occurs at least
@@ -235,6 +334,15 @@ Type S_Pattern
 	'@howOftenMax how often the set occurs at most
 	'@TODO
 	Method OccursEvery(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
+		
+	End Method
+	
+	'@description A "parent pattern" occurs several times
+	'@pattern A "parent" S_Pattern object
+	'@howOftenMin how often @pattern occurs at least
+	'@howOftenMax how often @pattern occurs at most
+	'@TODO
+	Method OccursPattern(pattern:S_Pattern, howOftenMin:Int, howOftenMax:Int)
 		
 	End Method
 End Type
