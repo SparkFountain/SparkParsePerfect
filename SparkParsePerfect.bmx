@@ -350,18 +350,21 @@ End Type
 '@description Data type for String collections that can be used for S_Pattern objects.
 '@TODO
 Type S_StringSet
-	Field values:String[]
+	Field chain:String[]
 
 	'@description Adds a new String to Self
 	'@newString a new String for this set
 	Method Add(newString:String)
-		
+		Self.chain = Self.chain[..Len(Self.chain)+1]
+		Self.chain[Len(Self.chain)-1] = newString
 	End Method
 	
 	'@description Adds some new Strings to Self
 	'@newString some new Strings for this set
 	Method AddMany(newStrings:String[])
-		
+		For Local currentString = EachIn newStrings
+			Self.Add(currentString)
+		Next
 	End Method
 End Type
 
