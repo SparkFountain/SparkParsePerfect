@@ -4,7 +4,7 @@ SuperStrict
 Include "SparkParsePerfect.bmx"
 
 'Create an arbitrary string of type S_String
-Global helloWorld:S_String = CreateSparkString("The quick brown fox jumps over the lazy cat! a")
+Global helloWorld:S_String = CreateSparkString("The quick brown fox jumps over the lazy cat!")
 
 
 Print "==================="
@@ -37,4 +37,3 @@ Next
 
 Print "==================="
 Print "AWESOME, RIGHT?! ;)"
-'End Rem

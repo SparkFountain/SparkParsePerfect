@@ -140,8 +140,12 @@ Type S_String
 	'@pattern 
 	'@flags 
 	'@TODO
-	Method Search:Int(pattern:S_Pattern, flags:String="")
-		Return -1
+	Method Search:S_Trove(pattern:S_Pattern, flags:String="")
+		Local result:S_Trove = New S_Trove
+		
+		'For Local p:
+			
+		Return result
 	End Method
 
 	'@description Returns a substring of self with left and right borders.
@@ -190,6 +194,7 @@ Type S_String
 		If(Len(delimiterIndexes) = 0) Then Return Null
 		
 		Local result:String[] 
+		'if delimiter occurs at last position of self, there is no part-string behind it
 		If(delimiterIndexes[Len(delimiterIndexes)-1] = Len(Self.value)-1) Then
 			result = New String[Len(delimiterIndexes)]
 		Else
@@ -201,7 +206,7 @@ Type S_String
 			result[i] = Self.SubString(startPos, delimiterIndexes[i]-1)
 			startPos = delimiterIndexes[i] + 1
 		Next
-		If(startPos < Len(Self.value)-1) Then result[Len(delimiterIndexes)] = Self.SubString(startPos, Len(Self.value)-1)
+		If(startPos < Len(Self.value)) Then result[Len(delimiterIndexes)] = Self.SubString(startPos, Len(Self.value)-1)
 		
 		Return result
 	End Method
@@ -306,7 +311,7 @@ Type S_Pattern
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
 	Method OccursAny:Int(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
-		
+		AddOccurrence(set, -1, howOftenMin, howOftenMax, "any")
 	End Method
 	
 	'@description A subset of @set with at least @howMany strings occurs certain times
@@ -316,7 +321,7 @@ Type S_Pattern
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
 	Method OccursAtLeast(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
-	
+		AddOccurrence(set, howMany, howOftenMin, howOftenMax, "at_least")
 	End Method
 	
 	'@description A subset of @set with at most @howMany strings occurs certain times
@@ -326,7 +331,7 @@ Type S_Pattern
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
 	Method OccursAtMost(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
-	
+		AddOccurrence(set, howMany, howOftenMin, howOftenMax, "at_most")
 	End Method
 	
 	'@description All strings of @set occur certain times
@@ -335,7 +340,7 @@ Type S_Pattern
 	'@howOftenMax how often the set occurs at most
 	'@TODO
 	Method OccursEvery(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
-		
+		AddOccurrence(set, -1, howOftenMin, howOftenMax, "every")
 	End Method
 	
 	'@description A "parent pattern" occurs several times
@@ -346,6 +351,36 @@ Type S_Pattern
 	Method OccursPattern(pattern:S_Pattern, howOftenMin:Int, howOftenMax:Int)
 		
 	End Method
+	
+	Method AddOccurrence(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int, sort:String)
+		Local o:S_Occurrence = New S_Occurrence
+		o.set = set
+		o.howMany = howMany
+		o.howOftenMin = howOftenMin
+		o.howOftenMax = howOftenMax
+		o.sort = sort
+		chain.AddLast(o)
+	End Method
+	
+	Method Find(search:S_String)
+		For o:S_Occurrence = EachIn chain
+			For s:String = EachIn o.set
+				Local totalOccurrences:Int[] = search.AllIndexesOf(s)
+				If(Len(totalOccurrences) >= o.howOftenMin And Len(totalOccurrences) <= o.howOftenMax) Then
+					'add sub-result
+				EndIf
+			Next
+		Next
+	End Method
+End Type
+
+'@description Data type for Occurrences of S_StringSet's
+Type S_Occurrence
+	Field set:S_StringSet
+	Field howMany:Int
+	Field howOftenMin:Int
+	Field howOftenMax:Int
+	Field sort:String
 End Type
 
 '@description Data type for String collections that can be used for S_Pattern objects.
@@ -372,7 +407,7 @@ End Type
 '@description Data type for results after @Search-Method was executed on an S_String object
 '@TODO
 Type S_Trove
+	Field result:String[]			'what is (are) the result string(s)
 	Field howOften:Int				'how often the pattern was found
 	Field atWhichPosition:Int[]		'at which position(s) in the string
-	Field result:String[]				'what is (are) the result string(s)
 End Type
