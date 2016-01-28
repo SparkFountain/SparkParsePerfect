@@ -67,26 +67,27 @@ Type S_String
 		Next
 		
 		While(selfCharPos < Len(selfFormatted))
-			If(searchCharPos = Len(search)) Then 
-				totalIndexes = totalIndexes + 1
-				If(((targetIndex = totalIndexes) Or targetIndex < 0) And (totalIndexes >= minIndexes) And (totalIndexes <= maxIndexes)) Then Exit
-				searchCharPos = 0
-			EndIf
-			
 			'Print "selfCharPos: "+selfCharPos
 			'Print "searchCharPos: "+searchCharPos
 				
 			If(selfFormatted[selfCharPos] = searchFormatted[searchCharPos]) Then
 				If(indexFound = -1) Then indexFound = selfCharPos
-				selfCharPos = selfCharPos + 1
 				searchCharPos = searchCharPos + 1
 			Else
-				selfCharPos = selfCharPos + 1
 				searchCharPos = 0
 				indexFound = -1
 			EndIf
+			
+			selfCharPos = selfCharPos + 1
+			
+			If(searchCharPos = Len(search)) Then 
+				totalIndexes = totalIndexes + 1
+				If(((targetIndex = totalIndexes) Or targetIndex < 0) And (totalIndexes >= minIndexes) And (totalIndexes <= maxIndexes)) Then Exit
+				searchCharPos = 0
+			EndIf
 		Wend
 
+		If(targetIndex <> totalIndexes) Then indexFound = -1 
 		Return indexFound
 	End Method
 	
@@ -362,7 +363,7 @@ Type S_StringSet
 	'@description Adds some new Strings to Self
 	'@newString some new Strings for this set
 	Method AddMany(newStrings:String[])
-		For Local currentString = EachIn newStrings
+		For Local currentString:String = EachIn newStrings
 			Self.Add(currentString)
 		Next
 	End Method

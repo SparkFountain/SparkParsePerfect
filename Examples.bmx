@@ -4,7 +4,9 @@ SuperStrict
 Include "SparkParsePerfect.bmx"
 
 'Create an arbitrary string of type S_String
-Global helloWorld:S_String = CreateSparkString("The quick brown fox jumps over the lazy cat! ")
+Global helloWorld:S_String = CreateSparkString("The quick brown fox jumps over the lazy cat! a")
+
+
 Print "==================="
 Print "Pure string value: "+helloWorld.value
 Print "Index of the letter 'q' where the String 'quick' first occurs: "+helloWorld.IndexOf("quick", "first;")
@@ -35,3 +37,4 @@ Next
 
 Print "==================="
 Print "AWESOME, RIGHT?! ;)"
+'End Rem
