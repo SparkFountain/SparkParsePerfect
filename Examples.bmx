@@ -34,6 +34,22 @@ For Local i:Int = 0 To Len(splitBySpaces)-1
 	Print splitBySpaces[i]
 Next
 
+Print "Find all phone numbers in a string:"
+Local dialText:S_String = CreateSparkString("Just dial +49 171 / 123 456 78, 030-99991842 or try (0043) 18956935 for support!")
+Print dialText.value
+Local countryCode:S_PatternChain = New S_PatternChain
+Local initCC:S_Pattern = New S_Pattern
+initCC.AddMany(["+", "00"])
+initCC.OccursExactly(1)
+countryCode.AddPattern(initCC)
+Local ccDigits:S_Pattern = New S_Pattern
+ccDigits.AddMany(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+ccDigits.Occurs(1, 3)
+countryCode.AddPattern(ccDigits)
+countryCode.SurroundChoice(["(", "["], [")", "]"], "keepIndex; optional;")
+Local trove:S_Trove = dialText.Search(countryCode)
+'Print "How often it was found [3]: "+trove.howOften
+
 
 Print "==================="
 Print "AWESOME, RIGHT?! ;)"

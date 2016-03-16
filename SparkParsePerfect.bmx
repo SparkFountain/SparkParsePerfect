@@ -24,10 +24,10 @@ Type S_String
 		Return Self.value
 	End Method
 	
-	'@description Returns an index of a given search string.
+	'@description Returns an index of a given search String.
 	'@search The string whose index is needed
 	'@flags [first; last; inner=%; innerLast=%; occursMin=%; occursMax=%; occursExactly=%; ignoreCase]
-	'return the specified index of @search
+	'@return the specified index of @search
 	Method IndexOf:Int(search:String, flags:String="first;")
 		Local selfCharPos:Int = 0		'current position inside self
 		Local searchCharPos:Int = 0		'current position inside the search string
@@ -99,7 +99,7 @@ Type S_String
 		Local result:Int[]
 		Local lookIndex:Int = 1
 		Repeat
-			Print "hanging in AllIndexesOf with inner="+lookIndex
+			'Print "hanging in AllIndexesOf with inner="+lookIndex
 			'TODO: pass the remaining flags too
 			Local currentResult:Int = Self.IndexOf(search, "inner="+lookIndex+";")
 			If(currentResult > -1) Then
@@ -131,20 +131,46 @@ Type S_String
 	'@search The string whose index is needed
 	'@flags [occursMin=%; occursMax=%, occursExactly=%]
 	'return all index ranges of @search
-	'@TODO
+	'@TODO return an array which contains array with 2 elements each
 	Method AllIndexRangesOf()
 		
 	End Method
 	
-	'@description Searches for a Pattern in self
+	'@description Searches for a PatternChain in self
 	'@pattern 
 	'@flags 
 	'@TODO
-	Method Search:S_Trove(pattern:S_Pattern, flags:String="")
+	Method Search:S_Trove(patternChain:S_PatternChain, flags:String="")
+		Print "pattern chain has "+Len(patternChain.chain)+" elements."
+	
 		Local result:S_Trove = New S_Trove
+		For Local i:Int=0 To Len(patternChain.chain)-1
+			Local tempResults:String[] = [""]
+			Local tempAtWhichPositions:Int[] = [-1]
+			'patterns
+			If(patternChain.chainTypes[i] = "pattern")
+				Local currentPattern:S_Pattern = S_Pattern(patternChain.chain[i])
+				Local indexes:Int = 0
+				'iterate over all strings in the current pattern
+				For Local j:Int=0 To Len(currentPattern.chain)-1
+					Local currentString:String = currentPattern.chain[j]
+					
+					For Local k:Int=0 To Len(tempResults)-1
+						Local stringIndexes:Int[] = Self.AllIndexesOf(tempResults[k] + currentPattern.chain[j])	'append all strings that have already been found at first position
+						Print tempResults[k] + currentPattern.chain[j]+" occurs "+Len(stringIndexes)+" times."
+						
+						For Local stringIndex:Int=0 To Len(stringIndexes)-1
+							tempResults = tempResults + [currentString]
+							tempAtWhichPositions = tempAtWhichPositions + [stringIndexes[stringIndex]]
+						Next
+					Next
+				Next
+			'pattern chains
+			Else
+				Print "found pattern chain"
+			EndIf
+		Next
 		
-		'For Local p:
-			
 		Return result
 	End Method
 
@@ -188,7 +214,6 @@ Type S_String
 	'@description Splits self into a new String array divided by a delimiter string
 	'@delimiter A delimiter string by which this object is split
 	'@returns Null if delimiter not found, otherwise an array with separated strings
-	'@TODO
 	Method Split:String[](delimiter:String)
 		Local delimiterIndexes:Int[] = Self.AllIndexesOf(delimiter)
 		If(Len(delimiterIndexes) = 0) Then Return Null
@@ -299,18 +324,47 @@ Type S_FlagParser
 	End Method
 End Type
 
-'@description Data type for Patterns like RegEx's
+'@description Patterns like RegEx's
 '@chain A TList object which saves the elements of which the Pattern consists
 '@TODO
 Type S_Pattern
-	Field chain:TList
+	Field chain:String[]
+	Field minOccurrence:Int
+	Field maxOccurrence:Int	
+	
+	Method Add(s:String)
+		Self.chain = Self.chain[..Len(Self.chain)+1]
+		Self.chain[Len(Self.chain)-1] = s
+	End Method
+	
+	Method AddMany(s:String[])
+		For Local i:Int=0 To Len(s)-1
+			Self.chain = Self.chain[..Len(Self.chain)+1]
+			Self.chain[Len(Self.chain)-1] = s[i]
+		Next
+	End Method
+
+	Method Occurs(atLeast:Int, atMost:Int)
+		Self.minOccurrence = atLeast
+		Self.maxOccurrence = atMost
+	End Method
+	
+	Method OccursExactly(value:Int)
+		Self.minOccurrence = value
+		Self.maxOccurrence = value
+	End Method
+
+
+	Rem
+	OLD STUFF BELOW
+	End Rem
 
 	'@description An arbitrary subset of @set occurs certain times
 	'@set An S_StringSet object
 	'@howOftenMin how often the subset occurs at least
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
-	Method OccursAny:Int(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
+	Method OccursAny:Int(set:String[], howOftenMin:Int, howOftenMax:Int)
 		AddOccurrence(set, -1, howOftenMin, howOftenMax, "any")
 	End Method
 	
@@ -320,7 +374,7 @@ Type S_Pattern
 	'@howOftenMin how often the subset occurs at least
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
-	Method OccursAtLeast(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
+	Method OccursAtLeast(set:String[], howMany:Int, howOftenMin:Int, howOftenMax:Int)
 		AddOccurrence(set, howMany, howOftenMin, howOftenMax, "at_least")
 	End Method
 	
@@ -330,7 +384,7 @@ Type S_Pattern
 	'@howOftenMin how often the subset occurs at least
 	'@howOftenMax how often the subset occurs at most
 	'@TODO
-	Method OccursAtMost(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int)
+	Method OccursAtMost(set:String[], howMany:Int, howOftenMin:Int, howOftenMax:Int)
 		AddOccurrence(set, howMany, howOftenMin, howOftenMax, "at_most")
 	End Method
 	
@@ -339,7 +393,7 @@ Type S_Pattern
 	'@howOftenMin how often the set occurs at least
 	'@howOftenMax how often the set occurs at most
 	'@TODO
-	Method OccursEvery(set:S_StringSet, howOftenMin:Int, howOftenMax:Int)
+	Method OccursEvery(set:String[], howOftenMin:Int, howOftenMax:Int)
 		AddOccurrence(set, -1, howOftenMin, howOftenMax, "every")
 	End Method
 	
@@ -352,7 +406,8 @@ Type S_Pattern
 		
 	End Method
 	
-	Method AddOccurrence(set:S_StringSet, howMany:Int, howOftenMin:Int, howOftenMax:Int, sort:String)
+	Method AddOccurrence(set:String[], howMany:Int, howOftenMin:Int, howOftenMax:Int, sort:String)
+		Rem
 		Local o:S_Occurrence = New S_Occurrence
 		o.set = set
 		o.howMany = howMany
@@ -360,9 +415,11 @@ Type S_Pattern
 		o.howOftenMax = howOftenMax
 		o.sort = sort
 		chain.AddLast(o)
+		End Rem
 	End Method
 	
 	Method Find(search:S_String)
+		Rem
 		For o:S_Occurrence = EachIn chain
 			For s:String = EachIn o.set
 				Local totalOccurrences:Int[] = search.AllIndexesOf(s)
@@ -371,12 +428,54 @@ Type S_Pattern
 				EndIf
 			Next
 		Next
+		End Rem
+	End Method
+End Type
+
+'@description Chains several patterns or other pattern chains together
+Type S_PatternChain
+	Field chain:Object[]
+	Field chainTypes:String[]
+	
+	Method AddPattern(pattern:S_Pattern)
+		Self.chain = Self.chain[..Len(Self.chain)+1]
+		Self.chain[Len(Self.chain)-1] = pattern
+		Self.chainTypes = Self.chainTypes + [""]
+		Self.chainTypes[Len(Self.chainTypes)-1] = "pattern"
+	End Method
+	
+	Method AddPatternChain(patternChain:S_PatternChain)
+		Self.chain = Self.chain[..Len(Self.chain)+1]
+		Self.chain[Len(Self.chain)-1] = patternChain
+		Self.chainTypes = Self.chainTypes + [""]
+		Self.chainTypes[Len(Self.chainTypes)-1] = "patternChain"
+	End Method
+	
+	
+	Method Surround(open:String, close:String, flags:String)
+		Local openPattern:S_Pattern = New S_Pattern
+		openPattern.Add(open)
+		chain = [openPattern] + chain
+		Local closePattern:S_Pattern = New S_Pattern
+		closePattern.Add(close)
+		Self.AddPattern(closePattern)
+	End Method
+	
+	Method SurroundChoice(open:String[], close:String[], flags:String)
+		Local openPattern:S_Pattern = New S_Pattern
+		openPattern.AddMany(open)
+		Self.chain = [openPattern] + Self.chain
+		Self.chainTypes = Self.chainTypes + ["pattern"]
+		Local closePattern:S_Pattern = New S_Pattern
+		closePattern.AddMany(close)
+		Self.AddPattern(closePattern)
+		Self.chainTypes = Self.chainTypes + ["pattern"]
 	End Method
 End Type
 
 '@description Data type for Occurrences of S_StringSet's
 Type S_Occurrence
-	Field set:S_StringSet
+	Field set:String[]
 	Field howMany:Int
 	Field howOftenMin:Int
 	Field howOftenMax:Int
@@ -384,7 +483,8 @@ Type S_Occurrence
 End Type
 
 '@description Data type for String collections that can be used for S_Pattern objects.
-'@TODO
+'@TODO remove this code??
+Rem
 Type S_StringSet
 	Field chain:String[]
 
@@ -403,11 +503,12 @@ Type S_StringSet
 		Next
 	End Method
 End Type
+End Rem
 
 '@description Data type for results after @Search-Method was executed on an S_String object
 '@TODO
 Type S_Trove
-	Field result:String[]			'what is (are) the result string(s)
+	Field results:String[]			'what is (are) the result string(s)
 	Field howOften:Int				'how often the pattern was found
-	Field atWhichPosition:Int[]		'at which position(s) in the string
+	Field atWhichPositions:Int[]	'at which position(s) in the string
 End Type
